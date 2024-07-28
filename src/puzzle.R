@@ -7,37 +7,11 @@ best_labels <- c("Haamstede", "Nice", "Noordwijk", "Normandië", "Schoorl")
 in_NL <- c(T, F, T, F, T)
 bi_bu_labels <- if_else(in_NL, "binnenland", "buitenland")
 
-combineer <- function(pm_duur, pm_acc, pm_best) {
-  
-  cur_duur <- pm_duur |> 
-    pivot_longer(everything(), names_to = "familie", values_to = "index") |> 
-    mutate(n_dagen = duur_labels[index],
-           familie = fam_labels[familie]) |> 
-    select(familie, n_dagen)
-  
-  cur_acc <- pm_acc |> 
-    pivot_longer(everything(), names_to = "familie", values_to = "index") |> 
-    mutate(accomodatie = acc_labels[index],
-           familie = fam_labels[familie]) |> 
-    select(familie, accomodatie)
-  
-  cur_best <- pm_best |> 
-    pivot_longer(everything(), names_to = "familie", values_to = "index") |> 
-    mutate(bestemming = best_labels[index],
-           familie = fam_labels[familie],
-           bi_bu = bi_bu_labels[index]) |> 
-    select(familie, bestemming, bi_bu)
-  
-  cur_duur |> inner_join(cur_acc, by = join_by("familie")) |> 
-    inner_join(cur_best, by = join_by("familie")) |> 
-    select(n_dagen, accomodatie, familie, bestemming, bi_bu)
-}
-
 gen_perms <- function() {
   families <- 1:5
-  perms <- permutations(n = length(families), r = 5, v = families) |> as_tibble(rownames = NA)
+  perms <- permutations(n = length(families), r = 5, v = families) |> as_tibble(.name_repair = "unique", rownames = NA)
   names(perms) <- paste0("fam_", 1:5)
-  return(perms)
+  return(perms |> as_tibble())
 }
 
 duren <- gen_perms()
@@ -45,17 +19,28 @@ accomodaties <- gen_perms()
 bestemmingen <- gen_perms()
 
 n_perms <- nrow(duren)
+t1 <- tibble(onderdeel = character(),
+             fam_1 = integer(),
+             fam_2 = integer(),
+             fam_3 = integer(),
+             fam_4 = integer(),
+             fam_5 = integer())
+c1 <- 0L
 
 for (p1 in 1:n_perms) {
   duur <- duren[p1,]
+  d1 <- duur |> mutate(onderdeel = "duur")
   
   for (p2 in 1:n_perms) {
     accomodatie <- accomodaties[p2,]
+    a1 <- accomodatie |> mutate(onderdeel = "accomodatie")
     
     for (p3 in 1:n_perms) {
-      bestemming <- bestemmingen[p3,]  
-      combi <- combineer(pm_duur = duur, pm_acc = accomodatie, pm_best = bestemming)
-      # resultaat <- beoordeel(combi)
+      bestemming <- bestemmingen[p3,]
+      b1 <- bestemming |> mutate(onderdeel = "bestemming")
+      c1 <- c1 + 1L
+      dab1 <- d1 |> bind_rows(a1) |> bind_rows(b1) |> mutate(conbi = c1)
+      t1 <- t1 |> bind_rows(dab1)
     }
   }
 }
