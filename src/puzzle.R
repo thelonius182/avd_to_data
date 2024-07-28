@@ -1,61 +1,31 @@
-pacman::p_load(gtools, dplyr, tidyr)
+library(gtools)  # for permutations
 
-fam_labels <- c(fam_1 = "De Boer", fam_2 = "Van Dijk", fam_3 = "Jansen", fam_4 = "De Jong", fam_5 = "De Vries")
-duur_labels <- c("8", "10", "11", "13", "14")
-acc_labels <- c("appartement", "b&b", "hotel", "huisje", "tent")
-best_labels <- c("Haamstede", "Nice", "Noordwijk", "Normandië", "Schoorl")
-in_NL <- c(T, F, T, F, T)
-bi_bu_labels <- if_else(in_NL, "binnenland", "buitenland")
+# Step 1: Define the mappings
+cities <- c("Amsterdam", "Berlin", "Copenhagen", "Dublin", "Edinburgh")
+accommodations <- c("Hotel", "Hostel", "Apartment", "B&B", "Camping")
+durations <- c("8 days", "10 days", "12 days", "14 days", "16 days")
 
-combineer <- function(pm_duur, pm_acc, pm_best) {
-  
-  cur_duur <- pm_duur |> 
-    pivot_longer(everything(), names_to = "familie", values_to = "index") |> 
-    mutate(n_dagen = duur_labels[index],
-           familie = fam_labels[familie]) |> 
-    select(familie, n_dagen)
-  
-  cur_acc <- pm_acc |> 
-    pivot_longer(everything(), names_to = "familie", values_to = "index") |> 
-    mutate(accomodatie = acc_labels[index],
-           familie = fam_labels[familie]) |> 
-    select(familie, accomodatie)
-  
-  cur_best <- pm_best |> 
-    pivot_longer(everything(), names_to = "familie", values_to = "index") |> 
-    mutate(bestemming = best_labels[index],
-           familie = fam_labels[familie],
-           bi_bu = bi_bu_labels[index]) |> 
-    select(familie, bestemming, bi_bu)
-  
-  cur_duur |> inner_join(cur_acc, by = join_by("familie")) |> 
-    inner_join(cur_best, by = join_by("familie")) |> 
-    select(n_dagen, accomodatie, familie, bestemming, bi_bu)
+# Step 2: Generate all permutations of the digits 1 to 5
+digits <- 1:5
+all_permutations <- permutations(n = length(digits), r = length(digits), v = digits, repeats.allowed = FALSE)
+set <- apply(all_permutations, 1, paste0, collapse = "")
+
+# Convert to integer type if necessary
+set <- as.integer(set)
+
+# Step 3: Use expand.grid to generate combinations
+combinations <- expand.grid(set1 = set, set2 = set, set3 = set)
+
+# Step 4: Apply mappings to combinations
+map_digits <- function(digit, mapping) {
+  sapply(strsplit(as.character(digit), ""), function(x) mapping[as.numeric(x)])
 }
 
-gen_perms <- function() {
-  families <- 1:5
-  perms <- permutations(n = length(families), r = 5, v = families) |> as_tibble(rownames = NA)
-  names(perms) <- paste0("fam_", 1:5)
-  return(perms)
-}
+combinations_mapped <- data.frame(
+  set1 = apply(combinations["set1"], 1, map_digits, mapping = cities),
+  set2 = apply(combinations["set2"], 1, map_digits, mapping = accommodations),
+  set3 = apply(combinations["set3"], 1, map_digits, mapping = durations)
+)
 
-duren <- gen_perms()
-accomodaties <- gen_perms()
-bestemmingen <- gen_perms()
-
-n_perms <- nrow(duren)
-
-for (p1 in 1:n_perms) {
-  duur <- duren[p1,]
-  
-  for (p2 in 1:n_perms) {
-    accomodatie <- accomodaties[p2,]
-    
-    for (p3 in 1:n_perms) {
-      bestemming <- bestemmingen[p3,]  
-      combi <- combineer(pm_duur = duur, pm_acc = accomodatie, pm_best = bestemming)
-      # resultaat <- beoordeel(combi)
-    }
-  }
-}
+# Print a few rows to see the result
+head(combinations_mapped)
