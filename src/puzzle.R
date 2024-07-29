@@ -1,4 +1,4 @@
-pacman::p_load(gtools, tidyr, dplyr, stringr)
+pacman::p_load(gtools, tidyr, dplyr, stringr, readr)
 
 # Define the mappings
 cities <- c("Haamstede", "Nice", "Noordwijk", "Normandië", "Schoorl")
@@ -70,7 +70,6 @@ rm(result_long)
 
 # rule 1
 # De vakantie naar Normandië duurt 3 dagen korter dan die in een hotel
-# n_nrm = n_htl - 3
 result_rule1a <- result_fam |> filter(destination == "Normandië") |> 
   mutate(n_dagen = as.integer(str_extract(duration, "^\\d{1,2}"))) |> select(combi_id, n_dagen)
 result_rule1b <- result_fam |> filter(accommodation == "hotel") |> 
@@ -119,3 +118,18 @@ result_rule4e <- result_rule4b |>
 result_fam4 <- result_fam4a |> filter(combi_id %in% result_rule4e$combi_id)
 rm(result_rule4a, result_rule4b, result_rule4c, result_rule4d, result_rule4e, result_fam4a)
 
+# rule 5
+# vakantie Haamstede langer dan Noordwijk en in beide plaatsen wordt geen huisje gehuurd
+result_rule5a <- result_fam4 |> filter(accommodation == "huisje" & destination %in% c("Haamstede", "Noordwijk")) |> 
+  select(combi_id)
+result_fam5a <- result_fam4 |> anti_join(result_rule5a, by = join_by(combi_id))
+
+result_rule5b <- result_fam5a |> filter(destination == "Haamstede") |> 
+  mutate(n_dagen = as.integer(str_extract(duration, "^\\d{1,2}"))) |> select(combi_id, n_haamstede = n_dagen)
+result_rule5c <- result_fam5a |> filter(destination == "Noordwijk") |> 
+  mutate(n_dagen = as.integer(str_extract(duration, "^\\d{1,2}"))) |> select(combi_id, n_noordwijk = n_dagen)
+result_rule5d <- result_rule5b |> 
+  inner_join(result_rule5c, by = join_by(combi_id)) |> filter(n_haamstede > n_noordwijk)
+result_fam5 <- result_fam5a |> filter(combi_id %in% result_rule5d$combi_id)
+
+write_tsv(x = result_fam5, file = "/home/lon/Documents/puzzel.tsv", col_names = T)
