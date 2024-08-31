@@ -1,6 +1,6 @@
 pacman::p_load(gtools, tidyr, dplyr, stringr, readr)
 
-# Define all of the mappings
+# Define allthe mappings
 cities <- c("Haamstede", "Nice", "Noordwijk", "Normandië", "Schoorl")
 accs <- c("appartement", "B&B", "hotel", "huisje", "tent")
 durations <- c("8 days", "10 days", "11 days", "13 days", "14 days")
