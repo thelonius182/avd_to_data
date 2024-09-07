@@ -1,6 +1,6 @@
 library(gtools)  # for permutations
 
-# Step 1: Define the mappings
+# Step 1: Define all of the mappings
 cities <- c("Amsterdam", "Berlin", "Copenhagen", "Dublin", "Edinburgh")
 accommodations <- c("Hotel", "Hostel", "Apartment", "B&B", "Camping")
 durations <- c("8 days", "10 days", "12 days", "14 days", "16 days")
